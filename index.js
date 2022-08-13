@@ -1,7 +1,7 @@
 //Required dependencies
 const express = require("express");
 const app = express();
-const port = process.env.DB_STRING || 5000;
+const port = process.env.PORT || 5000;
 const asyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
 const Video = require("./models/videoModel");
