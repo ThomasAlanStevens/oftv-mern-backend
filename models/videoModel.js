@@ -16,7 +16,6 @@ const videoSchema = new mongoose.Schema({
   channel: {
     type: String,
     required: true,
-    unique: true,
   },
   icon: {
     type: String,
@@ -27,10 +26,6 @@ const videoSchema = new mongoose.Schema({
     required: true,
   },
   link: {
-    type: String,
-    required: true,
-  },
-  watch: {
     type: String,
     required: true,
   },

@@ -3,10 +3,14 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 5000;
 const asyncHandler = require("express-async-handler");
-const mongoose = require("mongoose");
-const Video = require("./models/videoModel");
+const MongoClient = require("mongodb").MongoClient;
 const path = require("path");
 require("dotenv").config();
+
+//DECLARED DB VARIABLES
+let db,
+  dbConnectionStr = process.env.DB_STRING,
+  dbName = "oftv-videos";
 
 // Middleware
 app.use(express.json());
@@ -14,44 +18,31 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname + "/public")));
 
 // Connect to mongodb
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.DB_STRING);
-    console.log(`MongDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
+MongoClient.connect(dbConnectionStr, { useUnifiedTopology: true }).then(
+  client => {
+    console.log(`Connected to ${dbName} Database`);
+    db = client.db(dbName);
   }
-};
-
-connectDB();
+);
 
 // CRUD Operations
 
-// Get all videos
-app.get(
-  "/api/videos",
-  asyncHandler(async (req, res) => {
-    const videos = await Video.find();
-    res.json(videos);
-  })
-);
+// Get Operations
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
-// Add video
+app.get("/addVideo", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Add Videos operations
 app.post(
-  "/api/videos",
+  "/addVideo",
   asyncHandler(async (req, res) => {
     console.log(req.body);
-    const {
-      title,
-      categories,
-      channel,
-      creator,
-      icon,
-      link,
-      thumbnail,
-      watch,
-    } = req.body;
+    const { title, categories, channel, creator, icon, link, thumbnail } =
+      req.body;
 
     // If any info is not filled out, throw error
     if (
@@ -61,67 +52,46 @@ app.post(
       !creator ||
       !icon ||
       !link ||
-      !thumbnail ||
-      !watch
+      !thumbnail
     ) {
       res.status(400);
       throw new Error("Please fill out the entire form.");
     }
 
-    // If video already exists
-    const videoExists = await Video.findOne({ link });
-    if (videoExists) {
-      res.status(400);
-      throw new Error("Video already created");
-    }
-
     // Create video
-    const video = await Video.create({
-      title,
-      categories,
-      channel,
-      creator,
-      icon,
-      link,
-      thumbnail,
-      watch,
-    });
-    console.log(video);
+    let newVideo = await db.collection("video_info").insertOne({ ...req.body });
+    res.sendFile(path.join(__dirname, "public", "index.html"));
   })
 );
 
-// Updater Video info
-// app.put(
-//   "/api/users/:id",
-//   asyncHandler(async (req, res) => {
-//     const user = await User.findById(req.params.id);
+// Update Video info
+app.put(
+  "/addVideo",
+  asyncHandler(async (req, res) => {
+    let updatedVideo = await db.collection("video_info").updateOne(
+      { link: req.body.link },
+      {
+        $set: {
+          ...req.body,
+        },
+      },
+      {
+        upsert: false,
+      }
+    );
+    res.json("Video updated!");
+  })
+);
 
-//     if (!user) {
-//       res.status(400);
-//       throw new Error("User not found");
-//     }
-
-//     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body);
-
-//     res.json(updatedUser);
-//   })
-// );
-
-// Delete Video account
-// app.delete(
-//   "/api/users/:id",
-//   asyncHandler(async (req, res) => {
-//     const user = await User.findById(req.params.id);
-
-//     if (!user) {
-//       res.status(400);
-//       throw new Error("User not found");
-//     }
-
-//     await user.remove();
-
-//     res.status(200).json({ id: req.params.id });
-//   })
-// );
+// Delete Video
+app.delete(
+  "/addVideo",
+  asyncHandler(async (req, res) => {
+    let deletedVideo = await db
+      .collection("video_info")
+      .deleteOne({ link: req.body.link });
+    res.json(deletedVideo);
+  })
+);
 
 app.listen(port, () => console.log(`server is running on port ${port}`));
