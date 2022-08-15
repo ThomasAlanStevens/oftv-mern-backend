@@ -28,15 +28,24 @@ MongoClient.connect(dbConnectionStr, { useUnifiedTopology: true }).then(
 // CRUD Operations
 
 // Get Operations
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.get("/addVideo", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.get(
+  "/getVideoInfo",
+  asyncHandler(async (req, res) => {
+    let videoInfo = await db.collection("video_info").find().toArray();
+    res.json(videoInfo);
+  })
+);
+
+app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
